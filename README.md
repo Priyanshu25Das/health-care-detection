@@ -1,2 +1,2 @@
-# health-care-detection
+# health_care_project
 web project 
