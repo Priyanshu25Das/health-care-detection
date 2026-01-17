@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Future Health Risk Prediction</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: "Segoe UI", Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #e3f2fd, #f5f7fa);
+    }
+    header {
+      background: #2c3e50;
+      color: #ecf0f1;
+      padding: 25px;
+      text-align: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+    header h1 {
+      margin: 0;
+      font-size: 30px;
+    }
+    header p {
+      margin: 5px 0 0;
+      font-size: 16px;
+      color: #bdc3c7;
+    }
+    main {
+      max-width: 800px;
+      margin: 30px auto;
+      background: #ffffff;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    form {
+      display: grid;
+      grid-gap: 15px;
+    }
+    label {
+      font-weight: bold;
+      color: #2c3e50;
+    }
+    input {
+      padding: 8px;
+      width: 95%;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      margin-top: 5px;
+    }
+    button {
+      padding: 12px;
+      background: #3498db;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.3s ease;
+    }
+    button:hover {
+      background: #2980b9;
+    }
+    h3 {
+      margin-top: 30px;
+      color: #2c3e50;
+      border-bottom: 2px solid #3498db;
+      padding-bottom: 5px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+      background: #fff;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      cursor: pointer;
+    }
+    th, td {
+      padding: 14px;
+      border: 1px solid #eee;
+      text-align: center;
+      font-size: 15px;
+    }
+    th {
+      background: #3498db;
+      color: white;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .low {
+      background-color: #eafaf1;
+      color: #155724;
+    }
+    .high {
+      background-color: #fdecea;
+      color: #721c24;
+      font-weight: bold;
+    }
+    #summary {
+      margin-top: 25px;
+      padding: 15px;
+      border-left: 6px solid #3498db;
+      background: #f7f9fc;
+      font-size: 16px;
+      line-height: 1.6;
+    }
+    canvas {
+      margin-top: 25px;
+    }
+
+    /* Modal Styles */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 10;
+      left: 0; top: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-content {
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      max-width: 500px;
+      width: 90%;
+      text-align: left;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      animation: fadeIn 0.3s;
+    }
+    .modal-content h2 {
+      margin-top: 0;
+      color: #2c3e50;
+    }
+    .close-btn {
+      float: right;
+      font-size: 20px;
+      font-weight: bold;
+      color: #e74c3c;
+      cursor: pointer;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.9); }
+      to { opacity: 1; transform: scale(1); }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🩺 Future Health Risk Predictor</h1>
+    <p>Personalized medical risk assessment with suggestions</p>
+  </header>
+  
+  <main>
+    <form id="predictForm">
+      <label>Age:
+        <input type="number" name="age" required>
+      </label>
+      <label>Sex (Male=1, Female=0):
+        <input type="number" name="sex_male" required>
+      </label>
+      <label>Blood Sugar (mg/dL):
+        <input type="number" step="0.1" name="blood_sugar" required>
+      </label>
+      <label>Blood Pressure (mmHg):
+        <input type="number" name="bp" required>
+      </label>
+      <label>Cholesterol (mg/dL):
+        <input type="number" step="0.1" name="cholesterol" required>
+      </label>
+      <button type="submit">🔍 Predict Risk</button>
+    </form>
+
+    <h3>Prediction Report</h3>
+    <div id="results"></div>
+    <canvas id="riskChart"></canvas>
+    <div id="summary"></div>
+  </main>
+
+  <!-- Modal -->
+  <div id="infoModal" class="modal">
+    <div class="modal-content">
+      <span class="close-btn" onclick="closeModal()">&times;</span>
+      <h2 id="modalTitle"></h2>
+      <p id="modalContent"></p>
+    </div>
+  </div>
+
+  <script>
+    const suggestions = {
+      "diabetes": "💊 First Aid: Drink water, monitor glucose levels.\n🩺 Medications: Consult doctor for insulin or metformin.\n⚠️ Precautions: Regular exercise, avoid sugary foods, check glucose daily.",
+      "hypertension": "💊 First Aid: Rest in a calm environment.\n🩺 Medications: Antihypertensives (consult doctor).\n⚠️ Precautions: Reduce salt intake, avoid stress, regular BP monitoring.",
+      "cholesterol": "💊 First Aid: No immediate action needed.\n🩺 Medications: Statins if prescribed.\n⚠️ Precautions: Avoid oily food, eat fiber-rich diet, regular lipid profile tests.",
+      "heart_disease": "💊 First Aid: If chest pain, chew aspirin (unless allergic) and seek emergency.\n🩺 Medications: Prescribed cardiac drugs.\n⚠️ Precautions: Quit smoking, regular ECG checkups, maintain weight.",
+      "stroke": "💊 First Aid: Call emergency immediately.\n🩺 Medications: Thrombolytics under doctor supervision.\n⚠️ Precautions: Control BP, manage cholesterol, exercise regularly."
+    };
+
+    document.getElementById("predictForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const formData = new FormData(e.target);
+      let data = {};
+      formData.forEach((value, key) => data[key] = Number(value));
+
+      let response = await fetch("/predict", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+
+      let result = await response.json();
+
+      if(result.error){
+        document.getElementById("results").innerHTML = "<p style='color:red; font-weight:bold;'>" + result.error + "</p>";
+        return;
+      }
+
+      // ---- Table ----
+      let table = `
+        <table>
+          <tr>
+            <th>Disease</th>
+            <th>Prediction</th>
+            <th>Risk Probability</th>
+            <th>Medical Remark</th>
+          </tr>
+      `;
+
+      let labels = [];
+      let probs = [];
+      let colors = [];
+
+      for (let disease in result) {
+        let pred = result[disease].prediction;
+        let prob = result[disease].probability;
+        let riskClass = pred === 1 ? "high" : "low";
+        let remark = pred === 1 
+          ? "⚠️ High Risk - Click for guidance" 
+          : "✅ Low Risk";
+
+        table += `
+          <tr class="${riskClass}" onclick="openModal('${disease}')">
+            <td>${disease.replace("_", " ").toUpperCase()}</td>
+            <td>${pred === 1 ? "Positive" : "Negative"}</td>
+            <td>${(prob * 100).toFixed(1)}%</td>
+            <td>${remark}</td>
+          </tr>
+        `;
+
+        labels.push(disease.replace("_", " "));
+        probs.push((prob * 100).toFixed(1));
+        colors.push(pred === 1 ? "#e74c3c" : "#2ecc71");
+      }
+
+      table += "</table>";
+      document.getElementById("results").innerHTML = table;
+
+      // ---- Chart ----
+      let ctx = document.getElementById("riskChart").getContext("2d");
+      if(window.riskChart){ window.riskChart.destroy(); }
+      window.riskChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: "Risk Probability (%)",
+            data: probs,
+            backgroundColor: colors
+          }]
+        },
+        options: {
+          onClick: (evt, item) => {
+            if(item.length > 0){
+              let disease = labels[item[0].index].toLowerCase().replace(" ","_");
+              openModal(disease);
+            }
+          },
+          scales: {
+            y: { beginAtZero: true, max: 100 }
+          }
+        }
+      });
+    });
+
+    // ---- Modal ----
+    function openModal(disease){
+      document.getElementById("modalTitle").innerText = disease.replace("_", " ").toUpperCase();
+      document.getElementById("modalContent").innerText = suggestions[disease] || "No suggestions available.";
+      document.getElementById("infoModal").style.display = "flex";
+    }
+    function closeModal(){
+      document.getElementById("infoModal").style.display = "none";
+    }
+  </script>
+</body>
+</html>
